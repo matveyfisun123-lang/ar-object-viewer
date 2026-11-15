@@ -1,60 +1,530 @@
-<!doctype html>
-<html lang="ru"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="theme-color" content="#101827"><title>AR Object Viewer — Interactive Edition</title>
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#101827">
+<title>AR Object Viewer — ORBIT</title>
+
 <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
 <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.7/aframe/build/aframe-ar.js"></script>
+
 <style>
-:root{--panel:rgba(12,19,32,.9);--line:rgba(255,255,255,.15);--accent:#75e0cf}
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101827;color:#f4f7fb;font-family:Inter,system-ui,sans-serif}
-a-scene{position:fixed;inset:0}.topbar{position:fixed;z-index:5;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;pointer-events:none}
-.brand,.status{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 12px;backdrop-filter:blur(12px);font-size:12px}
-.brand{font-weight:800;letter-spacing:.08em}.brand span{color:var(--accent)}.status{color:#d7e2ed}.status i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#f5c76b;margin-right:7px}
-.panel{position:fixed;z-index:5;left:12px;right:12px;bottom:14px;padding:15px;border-radius:20px;background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(16px);box-shadow:0 12px 40px #0006}
-.heading{display:flex;justify-content:space-between;gap:12px}h1{font-size:17px;margin:0 0 4px}.subtitle{margin:0;color:#aab8c8;font-size:12px}.tag{font-size:10px;color:var(--accent);border:1px solid #75e0cf55;padding:5px 8px;border-radius:99px;height:max-content}
-.description{color:#d7e2ed;font-size:12px;line-height:1.5;margin:12px 0}.controls{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-button{border:1px solid var(--line);border-radius:12px;padding:11px 8px;color:#f4f7fb;background:#ffffff0d;font-size:12px;font-weight:650;touch-action:manipulation}
-button.primary{background:var(--accent);color:#10212a;border-color:transparent}.hint{margin:10px 2px 0;font-size:10px;color:#9eacbd;text-align:center}
-.error{position:fixed;z-index:10;top:70px;left:12px;right:12px;padding:12px;border-radius:12px;background:#7a2d35ee;font-size:12px;display:none}
-@media(min-width:700px){.panel{left:auto;right:20px;bottom:20px;width:340px}.topbar{top:20px;left:20px;right:20px}}
-</style></head><body>
-<div class="topbar"><div class="brand">AR <span>OBJECT</span> VIEWER</div><div class="status" id="status"><i></i>Ожидание маркера Hiro</div></div>
+:root {
+  --panel: rgba(12,19,32,.9);
+  --line: rgba(255,255,255,.15);
+  --accent: #75e0cf;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #101827;
+  color: #f4f7fb;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+body {
+  background: transparent;
+}
+
+/* Камера */
+#arjs-video {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  object-fit: cover !important;
+  z-index: 0 !important;
+}
+
+a-scene {
+  position: fixed !important;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+a-scene canvas {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 1 !important;
+  pointer-events: none;
+}
+
+.topbar {
+  position: fixed;
+  z-index: 5;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.brand, .status {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px 12px;
+  backdrop-filter: blur(12px);
+  font-size: 12px;
+}
+
+.brand {
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.brand span { color: var(--accent); }
+
+.status { color: #d7e2ed; }
+
+.status i {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f5c76b;
+  margin-right: 7px;
+}
+
+.panel {
+  position: fixed;
+  z-index: 5;
+  left: 12px;
+  right: 12px;
+  bottom: 14px;
+  padding: 15px;
+  border-radius: 20px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 12px 40px #0006;
+}
+
+.heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+h1 {
+  font-size: 17px;
+  margin: 0 0 4px;
+}
+
+.subtitle {
+  margin: 0;
+  color: #aab8c8;
+  font-size: 12px;
+}
+
+.tag {
+  font-size: 10px;
+  color: var(--accent);
+  border: 1px solid #75e0cf55;
+  padding: 5px 8px;
+  border-radius: 99px;
+  height: max-content;
+}
+
+.description {
+  color: #d7e2ed;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 12px 0;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+button {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 11px 8px;
+  color: #f4f7fb;
+  background: #ffffff0d;
+  font-size: 12px;
+  font-weight: 650;
+  touch-action: manipulation;
+}
+
+button.primary {
+  background: var(--accent);
+  color: #10212a;
+  border-color: transparent;
+}
+
+.hint {
+  margin: 10px 2px 0;
+  font-size: 10px;
+  color: #9eacbd;
+  text-align: center;
+}
+
+.error {
+  position: fixed;
+  z-index: 10;
+  top: 70px;
+  left: 12px;
+  right: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #7a2d35ee;
+  font-size: 12px;
+  display: none;
+}
+
+@media(min-width:700px) {
+  .panel {
+    left: auto;
+    right: 20px;
+    bottom: 20px;
+    width: 340px;
+  }
+  .topbar {
+    top: 20px;
+    left: 20px;
+    right: 20px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+  <div class="brand">AR <span>OBJECT</span> VIEWER</div>
+  <div class="status" id="status">
+    <i></i>Ожидание маркера Hiro
+  </div>
+</div>
+
 <div class="error" id="error"></div>
-<a-scene embedded renderer="antialias:true;alpha:true;precision:mediump" vr-mode-ui="enabled:false" device-orientation-permission-ui="enabled:false" arjs="sourceType:webcam;facingMode:environment;debugUIEnabled:false;trackingMethod:best;">
-<a-marker preset="hiro" id="hiroMarker">
-<a-entity id="interactiveObject" position="0 0.15 0" rotation="0 0 0" scale="1 1 1">
-<a-cylinder position="0 0.08 0" radius=".48" height=".12" color="#24364b" metalness=".75" roughness=".28"></a-cylinder>
-<a-cylinder position="0 .16 0" radius=".39" height=".045" color="#75e0cf" metalness=".55"></a-cylinder>
-<a-torus position="0 .55 0" rotation="90 0 0" radius=".28" radius-tubular=".035" color="#75e0cf"></a-torus>
-<a-sphere position="0 .55 0" radius=".19" color="#dce9f5" metalness=".72" roughness=".18"></a-sphere>
-<a-cylinder position="0 .34 0" radius=".045" height=".34" color="#b7c7d8" metalness=".8"></a-cylinder>
-<a-sphere position="0 .82 0" radius=".075" color="#75e0cf" emissive="#174d48" emissive-intensity=".5"></a-sphere>
-<a-torus position="0 .82 0" rotation="90 0 0" radius=".13" radius-tubular=".012" color="#dce9f5"></a-torus>
-<a-box position="0 .03 0" width=".22" height=".025" depth=".22" color="#152333"></a-box>
-</a-entity></a-marker><a-entity camera></a-entity></a-scene>
-<section class="panel"><div class="heading"><div><h1>ORBIT — интерактивная модель</h1><p class="subtitle">Авторская процедурная 3D-композиция</p></div><span class="tag">3D / AR</span></div>
-<p class="description">Модель создана из геометрических элементов A-Frame. Наведите камеру на маркер Hiro, чтобы увидеть объект в дополненной реальности.</p>
-<div class="controls"><button id="rotate">↻ Вращать</button><button id="scaleUp">＋ Увеличить</button><button id="scaleDown">－ Уменьшить</button><button id="reset" class="primary">Сбросить</button><button id="info">О модели</button><button id="pause">⏸ Пауза</button></div>
-<p class="hint" id="hint">Проведите пальцем по модели для вращения; двумя пальцами изменяйте масштаб.</p></section>
+
+<a-scene
+  embedded
+  renderer="antialias:true; alpha:true; precision:mediump"
+  vr-mode-ui="enabled:false"
+  device-orientation-permission-ui="enabled:false"
+  arjs="sourceType:webcam; facingMode:environment; debugUIEnabled:false; trackingMethod:best;"
+>
+  <a-marker preset="hiro" id="hiroMarker">
+
+    <a-entity
+      id="interactiveObject"
+      position="0 0.15 0"
+      rotation="0 0 0"
+      scale="1 1 1"
+    >
+      <a-cylinder
+        position="0 0.08 0"
+        radius=".48"
+        height=".12"
+        color="#24364b"
+        metalness=".75"
+        roughness=".28">
+      </a-cylinder>
+
+      <a-cylinder
+        position="0 .16 0"
+        radius=".39"
+        height=".045"
+        color="#75e0cf"
+        metalness=".55">
+      </a-cylinder>
+
+      <a-torus
+        position="0 .55 0"
+        rotation="90 0 0"
+        radius=".28"
+        radius-tubular=".035"
+        color="#75e0cf">
+      </a-torus>
+
+      <a-sphere
+        position="0 .55 0"
+        radius=".19"
+        color="#dce9f5"
+        metalness=".72"
+        roughness=".18">
+      </a-sphere>
+
+      <a-cylinder
+        position="0 .34 0"
+        radius=".045"
+        height=".34"
+        color="#b7c7d8"
+        metalness=".8">
+      </a-cylinder>
+
+      <a-sphere
+        position="0 .82 0"
+        radius=".075"
+        color="#75e0cf"
+        emissive="#174d48"
+        emissive-intensity=".5">
+      </a-sphere>
+
+      <a-torus
+        position="0 .82 0"
+        rotation="90 0 0"
+        radius=".13"
+        radius-tubular=".012"
+        color="#dce9f5">
+      </a-torus>
+
+      <a-box
+        position="0 .03 0"
+        width=".22"
+        height=".025"
+        depth=".22"
+        color="#152333">
+      </a-box>
+    </a-entity>
+
+  </a-marker>
+
+  <a-entity camera></a-entity>
+</a-scene>
+
+<section class="panel">
+
+  <div class="heading">
+    <div>
+      <h1>ORBIT — интерактивная модель</h1>
+      <p class="subtitle">Авторская процедурная 3D-композиция</p>
+    </div>
+    <span class="tag">3D / AR</span>
+  </div>
+
+  <p class="description">
+    Модель создана из геометрических элементов A-Frame.
+    Наведите камеру на маркер Hiro, чтобы увидеть объект
+    в дополненной реальности.
+  </p>
+
+  <div class="controls">
+    <button id="rotate">↻ Вращать</button>
+    <button id="scaleUp">＋ Увеличить</button>
+    <button id="scaleDown">－ Уменьшить</button>
+    <button id="reset" class="primary">Сбросить</button>
+    <button id="info">О модели</button>
+    <button id="pause">⏸ Пауза</button>
+  </div>
+
+  <p class="hint" id="hint">
+    Проведите пальцем по модели для вращения;
+    двумя пальцами изменяйте масштаб.
+  </p>
+
+</section>
+
 <script>
-(()=>{const model=document.getElementById('interactiveObject'),marker=document.getElementById('hiroMarker'),status=document.getElementById('status'),hint=document.getElementById('hint'),error=document.getElementById('error');
-let scale=1,rotation=0,paused=false,dragging=false,lastX=0,lastY=0,pinchStart=0,pinchScale=1;
-const setScale=v=>{scale=Math.max(.55,Math.min(1.8,v));model.setAttribute('scale',`${scale} ${scale} ${scale}`)};
-const setRotation=v=>{rotation=v;model.setAttribute('rotation',`0 ${rotation} 0`)};
-document.getElementById('rotate').onclick=()=>setRotation(rotation+45);
-document.getElementById('scaleUp').onclick=()=>setScale(scale+.15);
-document.getElementById('scaleDown').onclick=()=>setScale(scale-.15);
-document.getElementById('reset').onclick=()=>{setScale(1);setRotation(0);hint.textContent='Положение и размер модели сброшены.'};
-document.getElementById('info').onclick=()=>hint.textContent='ORBIT — модель из цилиндров, сфер и колец. Размер и ориентация изменяются в реальном времени.';
-document.getElementById('pause').onclick=e=>{paused=!paused;e.currentTarget.textContent=paused?'▶ Продолжить':'⏸ Пауза';hint.textContent=paused?'Управление жестами приостановлено.':'Управление жестами включено.'};
-marker.addEventListener('markerFound',()=>status.innerHTML='<i style="background:#75e0cf"></i>Маркер найден · модель активна');
-marker.addEventListener('markerLost',()=>status.innerHTML='<i></i>Маркер не найден · наведите камеру на Hiro');
-document.querySelector('a-scene').addEventListener('pointerdown',e=>{dragging=true;lastX=e.clientX;lastY=e.clientY});
-window.addEventListener('pointermove',e=>{if(!dragging||paused)return;const dx=e.clientX-lastX,dy=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;setRotation(rotation+dx*.7);setScale(scale-dy*.002)});
-window.addEventListener('pointerup',()=>dragging=false);window.addEventListener('pointercancel',()=>dragging=false);
-window.addEventListener('touchstart',e=>{if(e.touches.length===2){pinchStart=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);pinchScale=scale}},{passive:true});
-window.addEventListener('touchmove',e=>{if(e.touches.length===2&&pinchStart>0&&!paused){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);setScale(pinchScale*d/pinchStart)}},{passive:true});
-window.addEventListener('touchend',e=>{if(e.touches.length<2)pinchStart=0});
-if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){error.style.display='block';error.textContent='Для камеры нужен HTTPS и разрешение на доступ к камере.'}
+(() => {
+
+const model = document.getElementById('interactiveObject');
+const marker = document.getElementById('hiroMarker');
+const scene = document.querySelector('a-scene');
+const status = document.getElementById('status');
+const hint = document.getElementById('hint');
+const error = document.getElementById('error');
+
+let scale = 1;
+let rotation = 0;
+let paused = false;
+let dragging = false;
+let lastX = 0;
+let lastY = 0;
+let pinchStart = 0;
+let pinchScale = 1;
+
+// Управление размером
+const setScale = value => {
+  scale = Math.max(0.55, Math.min(1.8, value));
+  model.setAttribute('scale', `${scale} ${scale} ${scale}`);
+};
+
+// Управление вращением
+const setRotation = value => {
+  rotation = value;
+  model.setAttribute('rotation', `0 ${rotation} 0`);
+};
+
+// Кнопки
+document.getElementById('rotate').onclick = () => {
+  setRotation(rotation + 45);
+};
+
+document.getElementById('scaleUp').onclick = () => {
+  setScale(scale + 0.15);
+};
+
+document.getElementById('scaleDown').onclick = () => {
+  setScale(scale - 0.15);
+};
+
+document.getElementById('reset').onclick = () => {
+  setScale(1);
+  setRotation(0);
+  hint.textContent = 'Положение и размер модели сброшены.';
+};
+
+document.getElementById('info').onclick = () => {
+  hint.textContent =
+    'ORBIT — модель из цилиндров, сфер и колец. Размер и ориентация изменяются в реальном времени.';
+};
+
+document.getElementById('pause').onclick = event => {
+  paused = !paused;
+  event.currentTarget.textContent =
+    paused ? '▶ Продолжить' : '⏸ Пауза';
+
+  hint.textContent = paused
+    ? 'Управление жестами приостановлено.'
+    : 'Управление жестами включено.';
+};
+
+// AR.js: камера
+scene.addEventListener('camera-init', () => {
+  status.innerHTML =
+    '<i style="background:#75e0cf"></i>Камера подключена';
+
+  const video = document.getElementById('arjs-video');
+
+  if (video) {
+    video.style.display = 'block';
+    video.style.visibility = 'visible';
+    video.style.opacity = '1';
+    video.style.zIndex = '0';
+  }
+});
+
+scene.addEventListener('camera-error', event => {
+  error.style.display = 'block';
+  error.textContent =
+    'Ошибка камеры: ' +
+    (event.detail?.error?.message || 'не удалось запустить камеру');
+});
+
+// Дополнительная проверка видеопотока
+scene.addEventListener('loaded', () => {
+  setTimeout(() => {
+    const video = document.getElementById('arjs-video');
+
+    if (!video) {
+      error.style.display = 'block';
+      error.textContent =
+        'Видеопоток не найден. Проверьте подключение AR.js.';
+      return;
+    }
+
+    video.setAttribute('playsinline', '');
+    video.setAttribute('autoplay', '');
+    video.muted = true;
+
+    video.play().catch(() => {
+      error.style.display = 'block';
+      error.textContent =
+        'Не удалось запустить видео. Проверьте разрешение камеры.';
+    });
+  }, 3000);
+});
+
+// Распознавание маркера
+marker.addEventListener('markerFound', () => {
+  status.innerHTML =
+    '<i style="background:#75e0cf"></i>Маркер найден · модель активна';
+});
+
+marker.addEventListener('markerLost', () => {
+  status.innerHTML =
+    '<i></i>Маркер не найден · наведите камеру на Hiro';
+});
+
+// Вращение перетаскиванием
+scene.addEventListener('pointerdown', event => {
+  if (paused) return;
+  dragging = true;
+  lastX = event.clientX;
+  lastY = event.clientY;
+});
+
+window.addEventListener('pointermove', event => {
+  if (!dragging || paused) return;
+
+  const dx = event.clientX - lastX;
+  const dy = event.clientY - lastY;
+
+  lastX = event.clientX;
+  lastY = event.clientY;
+
+  setRotation(rotation + dx * 0.7);
+  setScale(scale - dy * 0.002);
+});
+
+window.addEventListener('pointerup', () => {
+  dragging = false;
+});
+
+window.addEventListener('pointercancel', () => {
+  dragging = false;
+});
+
+// Масштабирование двумя пальцами
+window.addEventListener('touchstart', event => {
+  if (event.touches.length === 2 && !paused) {
+    pinchStart = Math.hypot(
+      event.touches[0].clientX - event.touches[1].clientX,
+      event.touches[0].clientY - event.touches[1].clientY
+    );
+
+    pinchScale = scale;
+  }
+}, { passive: true });
+
+window.addEventListener('touchmove', event => {
+  if (event.touches.length === 2 &&
+      pinchStart > 0 &&
+      !paused) {
+
+    const distance = Math.hypot(
+      event.touches[0].clientX - event.touches[1].clientX,
+      event.touches[0].clientY - event.touches[1].clientY
+    );
+
+    setScale(pinchScale * distance / pinchStart);
+  }
+}, { passive: true });
+
+window.addEventListener('touchend', event => {
+  if (event.touches.length < 2) {
+    pinchStart = 0;
+  }
+});
+
+// Проверка поддержки камеры
+if (!navigator.mediaDevices ||
+    !navigator.mediaDevices.getUserMedia) {
+
+  error.style.display = 'block';
+  error.textContent =
+    'Для камеры нужен HTTPS и поддержка доступа к камере.';
+}
+
 })();
-</script></body></html>
+</script>
+
+</body>
+</html>
