@@ -3,42 +3,70 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#101827">
-<title>AR Object Viewer — ORBIT</title>
 
-<!-- Те же библиотеки, что в рабочем старом проекте -->
+<title>ORBIT AR Viewer</title>
+
 <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
 
 <style>
-:root {
-  --panel: rgba(12,19,32,.9);
-  --line: rgba(255,255,255,.15);
-  --accent: #75e0cf;
-}
-
 * {
   box-sizing: border-box;
 }
 
 html, body {
   margin: 0;
+  padding: 0;
   width: 100%;
   height: 100%;
   overflow: hidden;
+  position: fixed;
+  inset: 0;
   font-family: Arial, sans-serif;
-  color: #f4f7fb;
+  background: transparent;
 }
 
-body {
-  background: transparent;
+/* Камера на весь экран iPhone */
+#arjs-video {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  object-fit: cover !important;
+  object-position: center center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* AR-сцена */
+a-scene {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  overflow: hidden !important;
+}
+
+/* Холст должен совпадать с экраном */
+a-scene canvas {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
 }
 
 .topbar {
   position: fixed;
   z-index: 1000;
-  top: 12px;
+  top: calc(env(safe-area-inset-top) + 10px);
   left: 12px;
   right: 12px;
   display: flex;
@@ -48,35 +76,26 @@ body {
 }
 
 .brand, .status {
-  background: var(--panel);
-  border: 1px solid var(--line);
+  background: rgba(12,19,32,.88);
+  border: 1px solid rgba(255,255,255,.15);
   border-radius: 14px;
   padding: 10px 12px;
-  backdrop-filter: blur(12px);
+  color: white;
   font-size: 12px;
+  backdrop-filter: blur(12px);
 }
 
 .brand {
-  font-weight: 800;
-  letter-spacing: .08em;
+  font-weight: bold;
+  letter-spacing: 1px;
 }
 
 .brand span {
-  color: var(--accent);
+  color: #75e0cf;
 }
 
 .status {
-  color: #d7e2ed;
   text-align: right;
-}
-
-.status i {
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #f5c76b;
-  margin-right: 7px;
 }
 
 .panel {
@@ -84,19 +103,19 @@ body {
   z-index: 1000;
   left: 12px;
   right: 12px;
-  bottom: 14px;
+  bottom: calc(env(safe-area-inset-bottom) + 10px);
   padding: 15px;
   border-radius: 20px;
-  background: var(--panel);
-  border: 1px solid var(--line);
+  background: rgba(12,19,32,.92);
+  border: 1px solid rgba(255,255,255,.15);
+  color: white;
   backdrop-filter: blur(16px);
-  box-shadow: 0 12px 40px #0006;
 }
 
 .heading {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
 }
 
 h1 {
@@ -112,10 +131,10 @@ h1 {
 
 .tag {
   font-size: 10px;
-  color: var(--accent);
+  color: #75e0cf;
   border: 1px solid #75e0cf55;
   padding: 5px 8px;
-  border-radius: 99px;
+  border-radius: 20px;
   height: max-content;
 }
 
@@ -133,20 +152,18 @@ h1 {
 }
 
 button {
-  border: 1px solid var(--line);
+  border: 1px solid rgba(255,255,255,.15);
   border-radius: 12px;
-  padding: 11px 8px;
-  color: #f4f7fb;
-  background: #ffffff0d;
+  padding: 12px 5px;
+  color: white;
+  background: rgba(255,255,255,.07);
   font-size: 12px;
-  font-weight: 650;
-  touch-action: manipulation;
+  font-weight: bold;
 }
 
 button.primary {
-  background: var(--accent);
+  background: #75e0cf;
   color: #10212a;
-  border-color: transparent;
 }
 
 .hint {
@@ -166,8 +183,6 @@ button.primary {
 
   .topbar {
     top: 20px;
-    left: 20px;
-    right: 20px;
   }
 }
 </style>
@@ -176,11 +191,8 @@ button.primary {
 <body>
 
 <div class="topbar">
-  <div class="brand">AR <span>OBJECT</span> VIEWER</div>
-
-  <div class="status" id="status">
-    <i></i>Ожидание маркера Hiro
-  </div>
+  <div class="brand">AR <span>ORBIT</span></div>
+  <div class="status" id="status">Ожидание Hiro</div>
 </div>
 
 <a-scene
@@ -191,121 +203,87 @@ button.primary {
 
   <a-marker preset="hiro" id="hiroMarker">
 
-    <a-entity
-      id="interactiveObject"
-      position="0 0.15 0"
-      rotation="0 0 0"
-      scale="1 1 1">
+    <a-entity id="interactiveObject" position="0 0.15 0">
 
-      <!-- Основание модели -->
-      <a-cylinder
-        position="0 0.08 0"
-        radius="0.48"
-        height="0.12"
-        color="#24364b"
-        metalness="0.75"
-        roughness="0.28">
+      <a-cylinder position="0 0.08 0"
+        radius="0.48" height="0.12"
+        color="#24364b" metalness="0.75">
       </a-cylinder>
 
-      <a-cylinder
-        position="0 0.16 0"
-        radius="0.39"
-        height="0.045"
-        color="#75e0cf"
-        metalness="0.55">
+      <a-cylinder position="0 0.16 0"
+        radius="0.39" height="0.045"
+        color="#75e0cf">
       </a-cylinder>
 
-      <!-- Центральная конструкция -->
-      <a-cylinder
-        position="0 0.34 0"
-        radius="0.045"
-        height="0.34"
-        color="#b7c7d8"
-        metalness="0.8">
+      <a-cylinder position="0 0.34 0"
+        radius="0.045" height="0.34"
+        color="#b7c7d8">
       </a-cylinder>
 
-      <a-torus
-        position="0 0.55 0"
+      <a-torus position="0 0.55 0"
         rotation="90 0 0"
         radius="0.28"
         radius-tubular="0.035"
         color="#75e0cf">
       </a-torus>
 
-      <a-sphere
-        position="0 0.55 0"
+      <a-sphere position="0 0.55 0"
         radius="0.19"
         color="#dce9f5"
-        metalness="0.72"
-        roughness="0.18">
+        metalness="0.72">
       </a-sphere>
 
-      <!-- Верхняя часть -->
-      <a-sphere
-        position="0 0.82 0"
+      <a-sphere position="0 0.82 0"
         radius="0.075"
-        color="#75e0cf"
-        emissive="#174d48"
-        emissive-intensity="0.5">
+        color="#75e0cf">
       </a-sphere>
 
-      <a-torus
-        position="0 0.82 0"
+      <a-torus position="0 0.82 0"
         rotation="90 0 0"
         radius="0.13"
         radius-tubular="0.012"
         color="#dce9f5">
       </a-torus>
 
-      <a-box
-        position="0 0.03 0"
-        width="0.22"
-        height="0.025"
-        depth="0.22"
+      <a-box position="0 0.03 0"
+        width="0.22" height="0.025" depth="0.22"
         color="#152333">
       </a-box>
 
     </a-entity>
-
   </a-marker>
 
   <a-entity camera></a-entity>
 </a-scene>
 
-<section class="panel">
-
+<div class="panel">
   <div class="heading">
     <div>
-      <h1>ORBIT — интерактивная модель</h1>
-      <p class="subtitle">Авторская процедурная 3D-композиция</p>
+      <h1>ORBIT — 3D MODEL</h1>
+      <p class="subtitle">Interactive augmented reality</p>
     </div>
-    <span class="tag">3D / AR</span>
+    <span class="tag">AR / 3D</span>
   </div>
 
   <p class="description">
-    Модель создана из геометрических элементов A-Frame.
-    Наведите камеру на маркер Hiro, чтобы увидеть объект
-    в дополненной реальности.
+    Наведи камеру на маркер Hiro, чтобы увидеть
+    трёхмерную модель ORBIT в дополненной реальности.
   </p>
 
   <div class="controls">
     <button id="rotate">↻ Вращать</button>
-    <button id="scaleUp">＋ Увеличить</button>
-    <button id="scaleDown">－ Уменьшить</button>
+    <button id="up">＋ Увеличить</button>
+    <button id="down">－ Уменьшить</button>
     <button id="reset" class="primary">Сбросить</button>
     <button id="info">О модели</button>
     <button id="pause">⏸ Пауза</button>
   </div>
 
-  <p class="hint" id="hint">
-    Используйте кнопки для управления моделью.
-  </p>
-
-</section>
+  <p class="hint" id="hint">Управляй моделью с помощью кнопок</p>
+</div>
 
 <script>
 (() => {
-
   const model = document.getElementById('interactiveObject');
   const marker = document.getElementById('hiroMarker');
   const status = document.getElementById('status');
@@ -315,95 +293,81 @@ button.primary {
   let rotation = 0;
   let paused = false;
 
-  // Изменение размера
-  function setScale(value) {
-    scale = Math.max(0.55, Math.min(1.8, value));
-
-    model.setAttribute(
-      'scale',
-      `${scale} ${scale} ${scale}`
-    );
+  function updateScale() {
+    model.setAttribute('scale', `${scale} ${scale} ${scale}`);
   }
 
-  // Изменение вращения
-  function setRotation(value) {
-    rotation = value;
-
-    model.setAttribute(
-      'rotation',
-      `0 ${rotation} 0`
-    );
+  function updateRotation() {
+    model.setAttribute('rotation', `0 ${rotation} 0`);
   }
 
-  // Вращение
   document.getElementById('rotate').onclick = () => {
     if (!paused) {
-      setRotation(rotation + 45);
+      rotation += 45;
+      updateRotation();
     }
   };
 
-  // Увеличение
-  document.getElementById('scaleUp').onclick = () => {
+  document.getElementById('up').onclick = () => {
     if (!paused) {
-      setScale(scale + 0.15);
+      scale = Math.min(1.8, scale + 0.15);
+      updateScale();
     }
   };
 
-  // Уменьшение
-  document.getElementById('scaleDown').onclick = () => {
+  document.getElementById('down').onclick = () => {
     if (!paused) {
-      setScale(scale - 0.15);
+      scale = Math.max(0.55, scale - 0.15);
+      updateScale();
     }
   };
 
-  // Сброс
   document.getElementById('reset').onclick = () => {
-    setScale(1);
-    setRotation(0);
-
-    hint.textContent =
-      'Размер и положение модели сброшены.';
+    scale = 1;
+    rotation = 0;
+    updateScale();
+    updateRotation();
+    hint.textContent = 'Положение модели сброшено';
   };
 
-  // Информация
   document.getElementById('info').onclick = () => {
     hint.textContent =
-      'ORBIT — авторская 3D-композиция из цилиндров, сфер и колец.';
+      'ORBIT — авторская модель из геометрических 3D-элементов.';
   };
 
-  // Пауза
   document.getElementById('pause').onclick = event => {
     paused = !paused;
-
     event.currentTarget.textContent =
       paused ? '▶ Продолжить' : '⏸ Пауза';
 
     hint.textContent = paused
-      ? 'Управление моделью приостановлено.'
-      : 'Управление моделью включено.';
+      ? 'Управление приостановлено'
+      : 'Управление включено';
   };
 
-  // Распознавание маркера
   marker.addEventListener('markerFound', () => {
-    status.innerHTML =
-      '<i style="background:#75e0cf"></i>Маркер найден · модель активна';
+    status.textContent = '✓ Маркер найден';
   });
 
   marker.addEventListener('markerLost', () => {
-    status.innerHTML =
-      '<i></i>Маркер не найден · наведите камеру на Hiro';
+    status.textContent = 'Ожидание Hiro';
   });
 
-  // Ошибки камеры
   window.addEventListener('camera-init', () => {
-    status.innerHTML =
-      '<i style="background:#75e0cf"></i>Камера подключена';
+    status.textContent = 'Камера подключена';
   });
 
   window.addEventListener('camera-error', () => {
-    status.textContent = 'Ошибка запуска камеры';
+    status.textContent = 'Ошибка камеры';
   });
 
+  // Обновление размеров при повороте iPhone
+  window.addEventListener('resize', () => {
+    const scene = document.querySelector('a-scene');
+    if (scene && scene.renderer) {
+      scene.renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+  });
 })();
 </script>
 
